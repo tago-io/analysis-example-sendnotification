@@ -1,41 +1,48 @@
-# Analysis Example
-# Send Notification to Yourself
+"""
+Analysis Example
+Send Notification to Yourself
 
-# The main function used by Tago to run the script.
-# It sends a notification to the account and another one linked to a dashboard.
+The main function used by TagoIO to run the script.
+It sends a notification to the account owner.
 
-# Environment Variables
-# You must setup the following Environment Variables:
-# message - Your Message
-# title - Your Title
-# ref_id - A bucket ID or a Dashboard ID.
+Environment Variables
+You must setup the following Environment Variables:
+message - Your Message
+title - Your Title
+"""
+from tagoio_sdk import Analysis
+from tagoio_sdk import Services
+from tagoio_sdk.modules.Account.Notification_Type import NotificationCreate
 
 
-from tago import Analysis
-from tago import Services
+def send_notification(token_profile: str, object: NotificationCreate) -> None:
+    """	Send Notification to Yourself
+
+    Args:
+		object (NotificationCreate): Notification Object
+    """
+    notification = Services({"token": token_profile}).Notification
+    notification.send(notification=object)
+
 
 # The function myAnalysis will run when you execute your analysis
-def myAnalysis(context, scope):
-  message = list(filter(lambda message: message['key'] == 'message', context.environment))
-  message = message[0]['value']
+def my_analysis(context, scope: list) -> None:
+    message = list(
+        filter(lambda message: message["key"] == "message", context.environment)
+    )
+    if not message:
+        raise ValueError("Missing value: 'message' not found in environment variables")
+    message = message[0].get("value")
 
-  title = list(filter(lambda title: title['key'] == 'title', context.environment))
-  title = title[0]['value']
+    title = list(filter(lambda title: title["key"] == "title", context.environment))
+    if not title:
+        raise ValueError("Missing value: 'title' not found in environment variables")
+    title = title[0]["value"]
 
-
-  ref_id = list(filter(lambda ref_id: ref_id['key'] == 'dashboard;_id', context.environment))
-  if not ref_id:
-    ref_id = list(filter(lambda ref_id: ref_id['key'] == 'bucket_id', context.environment))
-    if not ref_id:
-      ref_id = None
-    else:
-      ref_id = ref_id[0]['value']
-  else:
-    ref_id = ref_id[0]['value']
-
-  notification = Services(context.token).notification
-  notification.send(title, message, ref_id)
+    send_notification(
+        token_profile=context.token, object={"message": message, "title": title}
+    )
 
 
 # The analysis token in only necessary to run the analysis outside TagoIO
-Analysis('MY-ANALYSIS-TOKEN-HERE').init(myAnalysis)
+Analysis({"token": "MY-ANALYSIS-TOKEN-HERE"}).init(my_analysis)
